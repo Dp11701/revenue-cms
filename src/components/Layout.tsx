@@ -17,6 +17,7 @@ import {
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useMemo, useState } from "react";
 import { logoutCms } from "../api/auth";
+import { useProjectById } from "../hooks/useProjects";
 
 const { Header, Sider, Content } = AntLayout;
 
@@ -35,6 +36,8 @@ export function Layout() {
     const match = location.pathname.match(/^\/projects\/([^/]+)/);
     return match?.[1];
   }, [location.pathname]);
+
+  const { data: currentProject } = useProjectById(projectId || "");
 
   const searchParams = useMemo(
     () => new URLSearchParams(location.search),
@@ -152,7 +155,12 @@ export function Layout() {
             )}
             <Typography.Title level={4} className="!mb-0">
               {isProjectDetail
-                ? "Project"
+                ? (() => {
+                    const tabLabel =
+                      projectTabKey === "products" ? "product" : projectTabKey;
+                    const projectName = currentProject?.name || "Project";
+                    return `${projectName}/${tabLabel}`;
+                  })()
                 : selectedKey === "projects"
                 ? "Projects"
                 : selectedKey === "admin"

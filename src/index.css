@@ -13,3 +13,40 @@ body,
 body {
   @apply bg-white text-gray-900 antialiased;
 }
+
+/* ConfirmModal Styles */
+.confirm-modal .ant-modal-header {
+  @apply border-b border-red-200;
+}
+
+.confirm-modal .ant-modal-title {
+  @apply text-red-600 font-semibold;
+}
+
+.confirm-modal .ant-modal-body {
+  @apply p-6;
+}
+
+.confirm-modal-content {
+  @apply space-y-4;
+}
+
+.delete-confirmation-content {
+  @apply p-4 bg-red-50 rounded-lg border border-red-200;
+}
+
+.delete-warning-text {
+  @apply text-gray-700 leading-relaxed;
+}
+
+.delete-warning-text strong {
+  @apply text-red-600 font-semibold;
+}
+
+.confirm-modal .ant-btn-dangerous {
+  @apply bg-red-500 border-red-500 hover:bg-red-600 hover:border-red-600 text-white font-semibold;
+}
+
+.confirm-modal .ant-btn-dangerous:hover {
+  @apply bg-red-600 border-red-600;
+}

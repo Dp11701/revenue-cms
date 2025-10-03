@@ -43,7 +43,11 @@ export interface CreateEnvironmentResponse {
 
 export interface ApiKey {
   id: string;
-  rawKey: string;
+  status?: string;
+  created_at?: string; // some responses use created_at
+  createdAt?: string; // some responses use createdAt
+  hashKey?: string; // listing returns hashKey (masked)
+  rawKey?: string; // creation may return rawKey (full)
   environment: Environment;
 }
 
@@ -62,5 +66,12 @@ export interface ApiKeysResponse {
   success: boolean;
   status_code: number;
   messages: string[];
-  data: ApiKey[];
+  data: {
+    items: ApiKey[];
+    total_items: number;
+    item_count: number;
+    items_per_page: number;
+    total_page: number;
+    current_page: number;
+  };
 }

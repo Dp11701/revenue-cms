@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import { useParams, useLocation, useNavigate } from "react-router-dom";
-import { Tabs, Typography } from "antd";
+import { Tabs } from "antd";
 import { useProjectById } from "../../hooks/useProjects";
 import { ProductTab } from "./ProductTab";
 import { SettingsPage } from "../Settings/SettingsPage";
@@ -14,7 +14,7 @@ function TransactionsTab() {
 
 export function ProjectDetailPage() {
   const { projectId } = useParams();
-  const { data: project } = useProjectById(projectId || "");
+  useProjectById(projectId || "");
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = useMemo(
@@ -28,22 +28,12 @@ export function ProjectDetailPage() {
     | "transactions";
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <Typography.Title level={3} className="!mb-1">
-            {project?.name ?? "Project"}
-          </Typography.Title>
-          <Typography.Text type="secondary">
-            {project?.description}
-          </Typography.Text>
-        </div>
-      </div>
-
+    <div className="">
       <Tabs
         size="large"
         animated
         tabBarGutter={24}
+        tabBarStyle={{ display: "none" }}
         activeKey={activeKey}
         onChange={(key) => {
           navigate(`/projects/${projectId}?tab=${key}`);
