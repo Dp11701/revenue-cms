@@ -78,9 +78,9 @@ export function Layout() {
         width={240}
       >
         <div className="h-14 flex items-center px-4 text-white text-base font-semibold tracking-wide">
-          <span className="inline-flex items-center gap-2">
-            <span className="inline-block h-2.5 w-2.5 rounded-full bg-primary"></span>
-            {collapsed ? "RC" : "Revenue CMS"}
+          <span className="inline-flex items-center gap-0 justify-center">
+            <img src="/logo.png" alt="Revenue CMS" className="h-8 w-8" />
+            {collapsed ? "" : "Revenue CMS"}
           </span>
         </div>
         {isProjectDetail ? (

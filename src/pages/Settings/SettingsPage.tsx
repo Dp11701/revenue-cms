@@ -8,6 +8,7 @@ import type {
   Environment,
   CreateEnvironmentRequest,
   ApiKey,
+  CreateEnvVarRequest,
 } from "../../types/project";
 import {
   EyeInvisibleOutlined,
@@ -26,6 +27,7 @@ export const SettingsPage: React.FC = () => {
   const [apiKeys, setApiKeys] = useState<ApiKey[]>([]);
   const [revealedKeys, setRevealedKeys] = useState<Record<string, boolean>>({});
   const [creatingKey, setCreatingKey] = useState(false);
+  const [creatingEnvVar, setCreatingEnvVar] = useState(false);
   const [deletingKeyId, setDeletingKeyId] = useState<string>("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string>("");
@@ -41,6 +43,12 @@ export const SettingsPage: React.FC = () => {
       name: "",
       status: "published",
     });
+  const [editingEnvId, setEditingEnvId] = useState<string>("");
+  const [editEnvironment, setEditEnvironment] =
+    useState<CreateEnvironmentRequest>({ name: "", status: "published" });
+  const [savingEnv, setSavingEnv] = useState(false);
+  const [deletingEnvId, setDeletingEnvId] = useState<string>("");
+  const [showEnvDeleteModal, setShowEnvDeleteModal] = useState(false);
   const [formData, setFormData] = useState({
     projectId: projectId || "7894338132156350465",
     environmentId: "",
@@ -50,6 +58,12 @@ export const SettingsPage: React.FC = () => {
       retryAttempts: 3,
       enableLogging: true,
     },
+  });
+
+  const [envVarData, setEnvVarData] = useState<CreateEnvVarRequest>({
+    key: "",
+    value: "",
+    environment_id: "",
   });
 
   const handleCopyKey = async (keyItem: ApiKey) => {
@@ -102,21 +116,18 @@ export const SettingsPage: React.FC = () => {
     }
   }, [formData.projectId]);
 
-  const handleEnvironmentChange = (environmentId: string) => {
-    setSelectedEnvironment(environmentId);
-    setFormData((prev) => ({
-      ...prev,
-      environmentId,
-    }));
-    // refresh api keys list (keys are project-scoped; still refresh)
-    loadApiKeys();
-  };
-
   const handleInputChange = (field: string, value: unknown) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleEnvVarChange = (
+    field: keyof CreateEnvVarRequest,
+    value: string
+  ) => {
+    setEnvVarData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleNewEnvironmentChange = (
@@ -127,6 +138,33 @@ export const SettingsPage: React.FC = () => {
       ...prev,
       [field]: value,
     }));
+  };
+
+  const handleCreateEnvVar = async () => {
+    const envIdToUse = envVarData.environment_id || selectedEnvironment;
+    if (!formData.projectId || !envIdToUse || !envVarData.key.trim()) return;
+    try {
+      setCreatingEnvVar(true);
+      await environmentsApi.createEnvVar(formData.projectId, {
+        key: envVarData.key,
+        value: envVarData.value,
+        environment_id: envIdToUse,
+      });
+      setEnvVarData({ key: "", value: "", environment_id: envIdToUse });
+      notification.success({
+        message: "Environment variable created",
+        placement: "topRight",
+        duration: 4.5,
+      });
+    } catch {
+      notification.error({
+        message: "Failed to create environment variable",
+        placement: "topRight",
+        duration: 4.5,
+      });
+    } finally {
+      setCreatingEnvVar(false);
+    }
   };
 
   const handleCreateEnvironment = async () => {
@@ -167,6 +205,86 @@ export const SettingsPage: React.FC = () => {
       });
     } finally {
       setCreating(false);
+    }
+  };
+
+  const handleStartEditEnvironment = (env: Environment) => {
+    setEditingEnvId(env.id);
+    setEditEnvironment({ name: env.name, status: env.status });
+  };
+
+  const handleCancelEditEnvironment = () => {
+    setEditingEnvId("");
+    setEditEnvironment({ name: "", status: "published" });
+  };
+
+  const handleEditEnvironmentChange = (
+    field: keyof CreateEnvironmentRequest,
+    value: string
+  ) => {
+    setEditEnvironment((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveEnvironment = async () => {
+    if (!editingEnvId || !formData.projectId) return;
+    try {
+      setSavingEnv(true);
+      const response = await environmentsApi.updateEnvironment(
+        formData.projectId,
+        editingEnvId,
+        editEnvironment
+      );
+      const updated = response.data;
+      setEnvironments((prev) =>
+        prev.map((e) => (e.id === updated.id ? updated : e))
+      );
+      notification.success({
+        message: "Environment Updated",
+        placement: "topRight",
+        duration: 3,
+      });
+      handleCancelEditEnvironment();
+    } catch {
+      notification.error({
+        message: "Failed to update environment",
+        placement: "topRight",
+        duration: 3,
+      });
+    } finally {
+      setSavingEnv(false);
+    }
+  };
+
+  const handleAskDeleteEnvironment = (envId: string) => {
+    setDeletingEnvId(envId);
+    setShowEnvDeleteModal(true);
+  };
+
+  const handleConfirmDeleteEnvironment = async () => {
+    if (!deletingEnvId || !formData.projectId) return;
+    try {
+      await environmentsApi.deleteEnvironment(
+        formData.projectId,
+        deletingEnvId
+      );
+      setEnvironments((prev) => prev.filter((e) => e.id !== deletingEnvId));
+      if (selectedEnvironment === deletingEnvId) {
+        setSelectedEnvironment("");
+      }
+      notification.success({
+        message: "Environment Deleted",
+        placement: "topRight",
+        duration: 3,
+      });
+    } catch {
+      notification.error({
+        message: "Failed to delete environment",
+        placement: "topRight",
+        duration: 3,
+      });
+    } finally {
+      setShowEnvDeleteModal(false);
+      setDeletingEnvId("");
     }
   };
   useEffect(() => {
@@ -304,7 +422,7 @@ export const SettingsPage: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-6">
+    <div className=" mx-auto p-6">
       <div className="bg-white shadow-lg rounded-lg">
         <div className="px-6 py-4 border-b border-gray-200">
           <h1 className="text-2xl font-bold text-gray-900">
@@ -420,7 +538,7 @@ export const SettingsPage: React.FC = () => {
                       >
                         <option value="published">Published</option>
                         <option value="draft">Draft</option>
-                        <option value="archived">Archived</option>
+                        <option value="archive">Archive</option>
                       </select>
                     </div>
                   </div>
@@ -453,28 +571,102 @@ export const SettingsPage: React.FC = () => {
                     key={env.id}
                     className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedEnvironment === env.id
-                        ? "border-blue-500 bg-blue-50"
+                        ? "border-gray-200 hover:border-gray-300"
                         : "border-gray-200 hover:border-gray-300"
                     }`}
-                    onClick={() => handleEnvironmentChange(env.id)}
                   >
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <h3 className="font-medium text-gray-900">
-                          {env.name}
-                        </h3>
-                        <p className="text-sm text-gray-500">ID: {env.id}</p>
+                    {editingEnvId === env.id ? (
+                      <div className="space-y-2">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Name
+                            </label>
+                            <input
+                              type="text"
+                              value={editEnvironment.name}
+                              onChange={(e) =>
+                                handleEditEnvironmentChange(
+                                  "name",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            />
+                          </div>
+                          <div>
+                            <label className="block text-xs text-gray-500 mb-1">
+                              Status
+                            </label>
+                            <select
+                              value={editEnvironment.status}
+                              onChange={(e) =>
+                                handleEditEnvironmentChange(
+                                  "status",
+                                  e.target.value
+                                )
+                              }
+                              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            >
+                              <option value="published">Published</option>
+                              <option value="draft">Draft</option>
+                              <option value="archive">Archive</option>
+                            </select>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 justify-end">
+                          <button
+                            type="button"
+                            onClick={handleCancelEditEnvironment}
+                            className="px-3 py-1 text-sm text-gray-700 border border-gray-300 rounded hover:bg-gray-50"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleSaveEnvironment}
+                            disabled={savingEnv || !editEnvironment.name.trim()}
+                            className="px-3 py-1 text-sm text-white bg-blue-600 rounded hover:bg-blue-700 disabled:opacity-50"
+                          >
+                            {savingEnv ? "Saving..." : "Save"}
+                          </button>
+                        </div>
                       </div>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full ${
-                          env.status === "published"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-yellow-100 text-yellow-800"
-                        }`}
-                      >
-                        {env.status}
-                      </span>
-                    </div>
+                    ) : (
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <h3 className="font-medium text-gray-900">
+                            {env.name}
+                          </h3>
+                          <p className="text-sm text-gray-500">ID: {env.id}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`px-2 py-1 text-xs font-medium rounded-full ${
+                              env.status === "published"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-yellow-100 text-yellow-800"
+                            }`}
+                          >
+                            {env.status}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleStartEditEnvironment(env)}
+                            className="px-2 py-1 text-xs text-gray-700 border border-gray-200 rounded hover:bg-gray-50"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleAskDeleteEnvironment(env.id)}
+                            className="px-2 py-1 text-xs text-red-600 border border-red-200 rounded hover:bg-red-50"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -604,6 +796,74 @@ export const SettingsPage: React.FC = () => {
             )}
           </div>
 
+          {/* Environment Variables */}
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold text-gray-900">
+                Environment Variables
+              </h2>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-2 items-end">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Environment
+                </label>
+                <select
+                  value={envVarData.environment_id}
+                  onChange={(e) =>
+                    handleEnvVarChange("environment_id", e.target.value)
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">Select environment</option>
+                  {environments.map((env) => (
+                    <option key={env.id} value={env.id}>
+                      {env.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Key
+                </label>
+                <input
+                  type="text"
+                  value={envVarData.key}
+                  onChange={(e) => handleEnvVarChange("key", e.target.value)}
+                  placeholder="e.g., API_URL"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Value
+                </label>
+                <input
+                  type="text"
+                  value={envVarData.value}
+                  onChange={(e) => handleEnvVarChange("value", e.target.value)}
+                  placeholder="e.g., https://api.example.com"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
+              </div>
+              <div className="flex justify-end md:justify-start">
+                <button
+                  type="button"
+                  onClick={handleCreateEnvVar}
+                  disabled={
+                    creatingEnvVar ||
+                    !envVarData.key.trim() ||
+                    !(envVarData.environment_id || selectedEnvironment)
+                  }
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {creatingEnvVar ? "Creating..." : "Create Env Var"}
+                </button>
+              </div>
+            </div>
+          </div>
+
           {/* Delete confirmation modal */}
           <ConfirmModal
             open={showDeleteModal}
@@ -640,6 +900,23 @@ export const SettingsPage: React.FC = () => {
                   " "
                 )}?`
               : null}
+          </ConfirmModal>
+
+          {/* Environment delete confirmation modal */}
+          <ConfirmModal
+            open={showEnvDeleteModal}
+            onCancel={() => {
+              setShowEnvDeleteModal(false);
+              setDeletingEnvId("");
+            }}
+            onConfirm={handleConfirmDeleteEnvironment}
+            title="Delete Environment"
+            okText="Delete"
+            okType="danger"
+            cancelText="Cancel"
+          >
+            Are you sure you want to delete this environment? This action cannot
+            be undone.
           </ConfirmModal>
         </form>
       </div>

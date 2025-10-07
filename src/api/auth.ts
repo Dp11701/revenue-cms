@@ -39,5 +39,7 @@ export function logoutCms() {
     localStorage.removeItem("refresh_token");
     localStorage.removeItem("member_id");
     delete api.defaults.headers.common.Authorization;
-  } catch {}
+  } catch {
+    console.error("Failed to logout");
+  }
 }

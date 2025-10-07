@@ -1,5 +1,9 @@
 import { api } from "./axios";
-import type { Project } from "../types/project";
+import type {
+  Project,
+  CreateProjectRequest,
+  CreateProjectResponse,
+} from "../types/project";
 
 type ProjectsApiResponse = {
   success: boolean;
@@ -9,6 +13,8 @@ type ProjectsApiResponse = {
     items: Array<{
       id: string;
       name: string;
+      thumb?: string;
+      status?: "published" | "draft" | "archive";
     }>;
     total_items: number;
     item_count: number;
@@ -29,7 +35,13 @@ export async function fetchProjects(): Promise<Project[]> {
     id: it.id,
     name: it.name,
     description: "", // API does not provide; keep empty for now
-    status: "active", // API does not provide; default to active
+    status:
+      it.status === "published"
+        ? "active"
+        : it.status === "draft"
+        ? "paused"
+        : "archived",
+    thumb: it.thumb || undefined,
   }));
 }
 
@@ -39,4 +51,14 @@ export async function fetchProjectById(
   // No single-item endpoint provided; fetch list and find locally
   const projects = await fetchProjects();
   return projects.find((p) => p.id === projectId);
+}
+
+const BASE_URL = "https://dev.begamob.com/project/revenue-cow/api/v1";
+
+export async function createProject(
+  payload: CreateProjectRequest
+): Promise<CreateProjectResponse> {
+  const url = `${BASE_URL}/projects`;
+  const { data } = await api.post<CreateProjectResponse>(url, payload);
+  return data;
 }

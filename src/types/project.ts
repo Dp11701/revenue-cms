@@ -5,9 +5,10 @@ export interface Project {
   name: string;
   description: string;
   status: ProjectStatus;
+  thumb?: string;
 }
 
-export type EnvironmentStatus = "published" | "draft" | "archived";
+export type EnvironmentStatus = "published" | "draft" | "archive";
 
 export interface Environment {
   id: string;
@@ -73,5 +74,44 @@ export interface ApiKeysResponse {
     items_per_page: number;
     total_page: number;
     current_page: number;
+  };
+}
+
+export interface EnvVar {
+  id: string;
+  key: string;
+  value: string;
+  environment_id: string;
+}
+
+export interface CreateEnvVarRequest {
+  key: string;
+  value: string;
+  environment_id: string;
+}
+
+export interface CreateEnvVarResponse {
+  success: boolean;
+  status_code: number;
+  messages: string[];
+  data: EnvVar;
+}
+
+// Project creation types
+export interface CreateProjectRequest {
+  name: string;
+  thumb: string;
+  status: "published" | "draft" | "archive";
+}
+
+export interface CreateProjectResponse {
+  success: boolean;
+  status_code: number;
+  messages: string[];
+  data: {
+    id: string;
+    name: string;
+    thumb?: string;
+    status?: string;
   };
 }
