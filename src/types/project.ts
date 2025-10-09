@@ -97,6 +97,38 @@ export interface CreateEnvVarResponse {
   data: EnvVar;
 }
 
+export interface EnvVarsResponse {
+  success: boolean;
+  status_code: number;
+  messages: string[];
+  data: {
+    items: EnvVar[];
+    total_items: number;
+    item_count: number;
+    items_per_page: number;
+    total_page: number;
+    current_page: number;
+  };
+}
+
+export interface UpdateEnvVarRequest {
+  key?: string;
+  value?: string;
+}
+
+export interface UpdateEnvVarResponse {
+  success: boolean;
+  status_code: number;
+  messages: string[];
+  data: EnvVar;
+}
+
+export interface DeleteEnvVarResponse {
+  success: boolean;
+  status_code: number;
+  messages: string[];
+}
+
 // Project creation types
 export interface CreateProjectRequest {
   name: string;

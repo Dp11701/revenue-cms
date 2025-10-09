@@ -3,8 +3,6 @@ import type {
   EnvironmentsResponse,
   CreateEnvironmentRequest,
   CreateEnvironmentResponse,
-  CreateEnvVarRequest,
-  CreateEnvVarResponse,
 } from "../types/project";
 
 const BASE_URL = "https://dev.begamob.com/project/revenue-cow/api/v1";
@@ -60,17 +58,6 @@ export const environmentsApi = {
   ): Promise<{ success: boolean } | void> => {
     const response = await api.delete(
       `${BASE_URL}/project/${projectId}/environments/${environmentId}`
-    );
-    return response.data;
-  },
-
-  createEnvVar: async (
-    projectId: string,
-    payload: CreateEnvVarRequest
-  ): Promise<CreateEnvVarResponse> => {
-    const response = await api.post(
-      `${BASE_URL}/project/${projectId}/environment/env-vars`,
-      payload
     );
     return response.data;
   },
